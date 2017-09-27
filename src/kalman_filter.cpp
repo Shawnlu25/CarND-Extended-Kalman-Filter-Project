@@ -38,6 +38,16 @@ void KalmanFilter::Update(const VectorXd &z) {
   P_ = (I - K * H_) * P_;
 }
 
+double KalmanFilter::NormalizeAngle(double phi)
+{
+  const double Max = M_PI;
+  const double Min = -M_PI;
+
+  return phi < Min
+    ? Max + std::fmod(phi - Min, 2*M_PI)
+    : std::fmod(phi - Min, 2*M_PI) + Min;
+}
+
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
   TODO:
@@ -45,11 +55,12 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   */
   VectorXd h = VectorXd(3); 
   double rho =  sqrt(x_(0)*x_(0) + x_(1)*x_(1));
-  double theta = atan(x_(1) / x_(0));
+  double phi = atan(x_(1) / x_(0));
   double rho_dot = (x_(0)*x_(2) + x_(1)*x_(3)) / rho;
-  h << rho, theta, rho_dot;
+  h << rho, phi, rho_dot;
   
   VectorXd y = z - h;
+  y(1) = NormalizeAngle(y(1));
   MatrixXd Ht = H_.transpose();
   MatrixXd S = H_ * P_ * Ht + R_;
   MatrixXd Si = S.inverse();
